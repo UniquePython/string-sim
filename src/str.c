@@ -7,6 +7,8 @@ void string_init(StringState *s, int N, float damping)
     if (!s)
         return;
 
+    pthread_mutex_init(&s->lock, NULL);
+
     s->N = N;
     s->damping = damping;
 
@@ -52,6 +54,8 @@ void string_pluck(StringState *s, float position, float amplitude)
 
 void string_step(StringState *s)
 {
+    pthread_mutex_lock(&s->lock);
+
     int N = s->N;
     float r2 = s->r * s->r;
 
@@ -72,12 +76,19 @@ void string_step(StringState *s)
         u_next[i] = 2.0f * s->u_curr[i] - s->u_prev[i] + r2 * laplacian - s->damping * velocity;
     }
 
+    // loss filter
+    float loss = 0.001f;
+    for (int i = 1; i < N - 1; i++)
+        u_next[i] = u_next[i] * (1.0f - loss) + 0.5f * loss * (u_next[i - 1] + u_next[i + 1]);
+
     // Shift states: u_prev <- u_curr, u_curr <- u_next
     for (int i = 0; i < N; i++)
     {
         s->u_prev[i] = s->u_curr[i];
         s->u_curr[i] = u_next[i];
     }
+
+    pthread_mutex_unlock(&s->lock);
 }
 
 float string_sample(const StringState *s, float pickup_pos)
@@ -101,4 +112,11 @@ float string_sample(const StringState *s, float pickup_pos)
 
     // Linear interpolation
     return s->u_curr[i] * (1.0f - frac) + s->u_curr[i + 1] * frac;
+}
+
+void string_sync_display(StringState *s)
+{
+    pthread_mutex_lock(&s->lock);
+    memcpy(s->u_display, s->u_curr, s->N * sizeof(float));
+    pthread_mutex_unlock(&s->lock);
 }

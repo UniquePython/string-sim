@@ -35,7 +35,7 @@ int main(void)
     for (int i = 0; i < NUM_NOTES; i++)
     {
         float freq = FREQS[i] * powf(2.0f, (float)octave_shift);
-        int note_n = (int)roundf(44100.0f / (2.0f * freq)) + 1;
+        int note_n = (int)roundf(44100.0f / (2.0f * freq));
         string_init(&strings[i], note_n, damping);
     }
 
@@ -79,6 +79,9 @@ int main(void)
 
         audio.pickup_pos = pickup_pos;
         audio_update(&audio);
+
+        for (int i = 0; i < NUM_NOTES; i++)
+            string_sync_display(&strings[i]);
 
         BeginDrawing();
         ClearBackground(BLACK);

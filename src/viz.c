@@ -23,8 +23,8 @@ void viz_draw_strings(const StringState *strings, int count)
         {
             float x0 = (float)i / (N - 1) * width;
             float x1 = (float)(i + 1) / (N - 1) * width;
-            float y0 = y_center - str->u_curr[i] * scale;
-            float y1 = y_center - str->u_curr[i + 1] * scale;
+            float y0 = y_center - str->u_display[i] * scale;
+            float y1 = y_center - str->u_display[i + 1] * scale;
             DrawLineV((Vector2){x0, y0}, (Vector2){x1, y1}, col);
         }
     }
