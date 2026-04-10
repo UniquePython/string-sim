@@ -45,6 +45,11 @@ void string_pluck(StringState *s, float position, float amplitude)
     for (int i = peak; i < N; i++)
         s->u_curr[i] = amplitude * (1.0f - ((float)(i - peak) / (N - 1 - peak)));
 
+    float loss = 0.5f;
+    for (int pass = 0; pass < 8; pass++)
+        for (int i = 1; i < s->N - 1; i++)
+            s->u_curr[i] = s->u_curr[i] * (1.0f - loss) + 0.5f * loss * (s->u_curr[i - 1] + s->u_curr[i + 1]);
+
     // Set previous state to zero (initial velocity = 0)
     memset(s->u_prev, 0, N * sizeof(float));
 
