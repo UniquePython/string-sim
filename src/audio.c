@@ -1,9 +1,17 @@
 #include "audio.h"
 
-void audio_init(AudioContext *ctx, StringState *string, float pickup_pos)
+void audio_init(AudioContext *ctx, StringState **strings, int num_strings, float pickup_pos)
 {
-    ctx->string = string;
+    // Clamp number of strings
+    if (num_strings > MAX_STRINGS)
+        num_strings = MAX_STRINGS;
+
+    ctx->num_strings = num_strings;
     ctx->pickup_pos = pickup_pos;
+
+    // Store string pointers
+    for (int i = 0; i < num_strings; i++)
+        ctx->strings[i] = strings[i];
 
     SetAudioStreamBufferSizeDefault(BUFFER_FRAMES);
 
@@ -13,15 +21,29 @@ void audio_init(AudioContext *ctx, StringState *string, float pickup_pos)
 
 void audio_update(AudioContext *ctx)
 {
-    // Keep feeding the stream as long as it needs data
     while (IsAudioStreamProcessed(ctx->stream))
     {
         float buffer[BUFFER_FRAMES];
 
         for (int i = 0; i < BUFFER_FRAMES; i++)
         {
-            string_step(ctx->string);
-            buffer[i] = string_sample(ctx->string, ctx->pickup_pos) * 0.2f;
+            float sample = 0.0f;
+
+            // Step and sample each string
+            for (int s = 0; s < ctx->num_strings; s++)
+            {
+                StringState *str = ctx->strings[s];
+
+                string_step(str);
+                sample += string_sample(str, ctx->pickup_pos);
+            }
+
+            // Simple normalization to avoid clipping
+            if (ctx->num_strings > 0)
+                sample /= (float)ctx->num_strings;
+
+            // output gain
+            buffer[i] = sample * 0.2f;
         }
 
         UpdateAudioStream(ctx->stream, buffer, BUFFER_FRAMES);
